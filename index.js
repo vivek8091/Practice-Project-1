@@ -104,24 +104,25 @@ app.get("/", (req, res) => {
 //   });
 // });
 
-
-
 // Storage Engine...
-const Storage = multer.diskStorage({
-  destination: "./uploads/", 
+const storage = multer.diskStorage({
+  destination: "./uploads/", // Folder to store images
   filename: (req, file, cb) => {
-    cb(null, file.fieldname + "_" + Date.now() + path.extname(file.originalname));
+    cb(
+      null,
+      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+    );
   },
 });
 
-
 // File Upload Middleware
 const upload = multer({
-  storage: Storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit: 5MB
+  storage: storage,
   fileFilter: (req, file, cb) => {
     const fileTypes = /jpeg|jpg|png|gif/;
-    const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
+    const extName = fileTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
     const mimeType = fileTypes.test(file.mimetype);
 
     if (extName && mimeType) {
@@ -132,20 +133,26 @@ const upload = multer({
   },
 });
 
+app.post("/upload", upload.array("images", 5), (req, res) => {
+  // Upload multiple images at a time...
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: "No files uploaded" });
+  }
 
-app.post("/upload", upload.single("image"), (req, res) => {
-  const imagePath = req.file.filename;
-  const query = "insert into images (image_path) values (?)";
-  conn.query(query, [imagePath], (err, result) => {
+  const imagePaths = req.files.map((file) => file.filename);
+  const query = "INSERT INTO images (image_path) VALUES ?";
+  const values = imagePaths.map((image) => [image]);
+
+  conn.query(query, [values], (err, result) => {
     if (err) {
       console.log(err);
-    } else {
-      return res.json({
-        success: true,
-        message: "Images uploaded successfully",
-        filePath: `/uploads/${imagePath}`,
-      });
+      return res.status(500).json({ message: "Database error" });
     }
+    return res.json({
+      success: true,
+      message: "Images uploaded successfully",
+      files: imagePaths,
+    });
   });
 });
 
@@ -153,7 +160,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.get("/getImg", (req, res) => {
   conn.query("select * from images", (err, result) => {
-    if(err) {
+    if (err) {
       console.log(err);
     } else {
       // res.json({
@@ -165,9 +172,6 @@ app.get("/getImg", (req, res) => {
     }
   });
 });
-
-
-
 
 app.listen(port, () => {
   // Checking if server is running or not...
