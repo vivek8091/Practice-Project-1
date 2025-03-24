@@ -173,13 +173,6 @@ app.get("/", (req, res) => {
 //   });
 // });
 
-
-
-
-
-
-
-
 // API to add values with multiple datatypes...
 app.post("/registration", (req, res) => {
   const { name, email, password, confirm_password, address, phone_no } =
@@ -213,6 +206,58 @@ app.post("/registration", (req, res) => {
       });
     }
   });
+});
+
+// API to get data rom registration table...
+app.get("/getRegistrationData", (req, res) => {
+  conn.query("select * from registration", (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Database error" });
+    } else {
+      return res.json({
+        success: true,
+        message: "Data fetched successfully...",
+        data: result,
+      });
+    }
+  });
+});
+
+// API to update last_login whenever the user logins...
+app.post("/changeLastLogin", (req, res) => {
+  const { email, password } = req.body;
+
+  conn.query(
+    "select * from registration where email = ? and password = ?",
+    [email, password],
+    (err, results) => {
+      if (err) {
+        console.log(err);
+      }
+      if (results.length === 0) {
+        // If no user found, return error response
+        return res
+          .status(401)
+          .json({ success: false, message: "Invalid email or password" });
+      }
+      conn.query(
+        "UPDATE registration SET last_login = NOW() WHERE email = ?",
+        email,
+        (err) => {
+          if (err) {
+            console.log(err);
+          } else {
+            return res.json({
+              success: true,
+              message: "Login successfully...",
+              data: results[0],
+            });
+          }
+        }
+      );
+    }
+  );
 });
 
 app.listen(port, () => {
