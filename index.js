@@ -105,70 +105,112 @@ app.get("/", (req, res) => {
 // });
 
 // Storage Engine...
-const storage = multer.diskStorage({
-  destination: "./uploads/", // Folder to store images
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: "./uploads/", // Folder to store images
+//   filename: (req, file, cb) => {
+//     cb(
+//       null,
+//       file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+//     );
+//   },
+// });
 
 // File Upload Middleware
-const upload = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|gif/;
-    const extName = fileTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimeType = fileTypes.test(file.mimetype);
+// const upload = multer({
+//   storage: storage,
+//   fileFilter: (req, file, cb) => {
+//     const fileTypes = /jpeg|jpg|png|gif/;
+//     const extName = fileTypes.test(
+//       path.extname(file.originalname).toLowerCase()
+//     );
+//     const mimeType = fileTypes.test(file.mimetype);
 
-    if (extName && mimeType) {
-      return cb(null, true);
-    } else {
-      return cb(new Error("Only images (JPG, PNG, GIF) are allowed!"));
-    }
-  },
-});
+//     if (extName && mimeType) {
+//       return cb(null, true);
+//     } else {
+//       return cb(new Error("Only images (JPG, PNG, GIF) are allowed!"));
+//     }
+//   },
+// });
 
-app.post("/upload", upload.array("images", 5), (req, res) => {
-  // Upload multiple images at a time...
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: "No files uploaded" });
+// app.post("/upload", upload.array("images", 5), (req, res) => {
+//   // Upload multiple images at a time...
+//   if (!req.files || req.files.length === 0) {
+//     return res.status(400).json({ message: "No files uploaded" });
+//   }
+
+//   const imagePaths = req.files.map((file) => file.filename);
+//   const query = "INSERT INTO images (image_path) VALUES ?";
+//   const values = imagePaths.map((image) => [image]);
+
+//   conn.query(query, [values], (err, result) => {
+//     if (err) {
+//       console.log(err);
+//       return res.status(500).json({ message: "Database error" });
+//     }
+//     return res.json({
+//       success: true,
+//       message: "Images uploaded successfully",
+//       files: imagePaths,
+//     });
+//   });
+// });
+
+// app.use("/uploads", express.static("uploads"));
+
+// app.get("/getImg", (req, res) => {
+//   conn.query("select * from images", (err, result) => {
+//     if (err) {
+//       console.log(err);
+//     } else {
+//       // res.json({
+//       //   success: true,
+//       //   message: "Images successfully fetched...",
+//       //   data: result,
+//       // });
+//       res.send(result);
+//     }
+//   });
+// });
+
+
+
+
+
+
+
+
+// API to add values with multiple datatypes...
+app.post("/registration", (req, res) => {
+  const { name, email, password, confirm_password, address, phone_no } =
+    req.body;
+
+  if (password !== confirm_password) {
+    return res.status(400).json({ message: "Password does not match..." });
   }
 
-  const imagePaths = req.files.map((file) => file.filename);
-  const query = "INSERT INTO images (image_path) VALUES ?";
-  const values = imagePaths.map((image) => [image]);
+  const signData = {
+    name: name,
+    email: email,
+    password: password,
+    address: address,
+    phone_no: phone_no,
+    last_login: null,
+    created_at: new Date(),
+  };
 
-  conn.query(query, [values], (err, result) => {
+  const query = "insert into registration set ?";
+
+  conn.query(query, signData, (err, result) => {
     if (err) {
       console.log(err);
       return res.status(500).json({ message: "Database error" });
-    }
-    return res.json({
-      success: true,
-      message: "Images uploaded successfully",
-      files: imagePaths,
-    });
-  });
-});
-
-app.use("/uploads", express.static("uploads"));
-
-app.get("/getImg", (req, res) => {
-  conn.query("select * from images", (err, result) => {
-    if (err) {
-      console.log(err);
     } else {
-      // res.json({
-      //   success: true,
-      //   message: "Images successfully fetched...",
-      //   data: result,
-      // });
-      res.send(result);
+      return res.json({
+        success: true,
+        message: "Data inserted successfully...",
+        data: result,
+      });
     }
   });
 });
